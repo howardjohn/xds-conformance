@@ -17,7 +17,8 @@ func RunChecks(labels conformance.LabelSelectors, input conformance.TestInput) [
 	})
 	for _, check := range checksToRun {
 		t0 := time.Now()
-		result := check.Run(context.TODO(), input)
+		ctx, _ := context.WithTimeout(context.Background(), check.Timeout)
+		result := check.Run(ctx, input)
 		if result.Duration == 0 {
 			result.Duration = time.Since(t0)
 		}

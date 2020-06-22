@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -28,12 +29,20 @@ var runCmd = &cobra.Command{
 	Short: "Run XDS conformance tests",
 	Long:  "Run XDS conformance tests",
 	Run: func(cmd *cobra.Command, args []string) {
+		if err := validateInput(); err != nil {
+			_, _ = fmt.Fprintf(cmd.OutOrStderr(), "invalid input: %v\n", err)
+			os.Exit(2)
+		}
 		results := runner.RunChecks(nil, testArgs)
 		displayResults(results, cmd.OutOrStdout())
 		if countErrors(results) > 0 {
 			os.Exit(1)
 		}
 	},
+}
+
+func validateInput() error {
+	return nil
 }
 
 func infoString(i string) string {
@@ -55,11 +64,13 @@ func displayResults(results []conformance.TestResult, stdout io.Writer) {
 		}
 		if result.Error != nil {
 
-			print("  %s %s failed in %v: %s%s", color.RedString("✘"), result.Name, result.Duration, result.Error, infoString(result.Information))
+			print("  %s %s failed in %v: %s%s", color.RedString("✘"), result.Name,
+				result.Duration.Truncate(time.Second / 10), result.Error, infoString(result.Information))
 			continue
 		}
 
-		print("  %s %s passed in %v%s", color.GreenString("✔"), result.Name, result.Duration, infoString(result.Information))
+		print("  %s %s passed in %v%s", color.GreenString("✔"), result.Name,
+			result.Duration.Truncate(time.Second / 10), infoString(result.Information))
 		continue
 	}
 }
@@ -73,6 +84,7 @@ func countErrors(results []conformance.TestResult) int {
 	}
 	return res
 }
+
 func countSuccess(results []conformance.TestResult) int {
 	res := 0
 	for _, r := range results {
@@ -82,6 +94,7 @@ func countSuccess(results []conformance.TestResult) int {
 	}
 	return res
 }
+
 func countSkipped(results []conformance.TestResult) int {
 	res := 0
 	for _, r := range results {

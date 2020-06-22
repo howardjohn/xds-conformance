@@ -45,6 +45,8 @@ type TestInput struct {
 type Check struct {
 	Name        string
 	Description string
-	Labels      []label.Instance
-	Run         func(ctx context.Context, input TestInput) TestResult
+	// Timeout for the test
+	Timeout time.Duration
+	Labels  []label.Instance
+	Run     func(ctx context.Context, input TestInput) TestResult
 }
