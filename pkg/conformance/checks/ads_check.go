@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/golang/protobuf/proto"
 
 	"github.com/envoyproxy/xds-conformance/pkg/conformance"
 	"github.com/envoyproxy/xds-conformance/pkg/label"
@@ -23,48 +21,87 @@ func constructNode() *core.Node {
 	}
 }
 
-var AdsCheck = RegisterCheck(conformance.Check{
-	Name:        "ADS",
-	Description: "Can connect over ADS and get a valid response",
+var AdsClusterCheck = RegisterCheck(conformance.Check{
+	Name:        "ADS Clusters",
+	Description: "Can connect over ADS and get a cluster valid response",
 	Labels:      []label.Instance{label.Server, label.XdsV3},
 	Timeout:     time.Second * 5,
 	Run: func(ctx context.Context, runner conformance.TestReporter, input conformance.TestInput) {
-		c, err := xds.ConnectAds(ctx, input.Address)
-		if err != nil {
-			runner.Error(connectionFailure(input.Address))
-			return
-		}
-		defer c.Cleanup()
-
-		if err := c.Send(&discovery.DiscoveryRequest{
-			Node:    constructNode(),
-			TypeUrl: resource.ClusterType,
-		}); err != nil {
-			runner.Error(requestFailure(err))
-			return
-		}
-		resp, err := c.Recv()
-		if err != nil {
-			runner.Error(responseFailure(err))
-			return
-		}
-		if resp.TypeUrl != resource.ClusterType {
-			runner.Error(fmt.Errorf("expected type URL %q, got %q", resource.ClusterType, resp.TypeUrl))
-		} else {
-			runner.Pass(fmt.Sprintf("Response has the correct TypeUrl: %s", resource.ClusterType))
-		}
-		for i, resource := range resp.Resources {
-			cl := &cluster.Cluster{}
-			// TODO is this safe? With Any we may not know all types. It would be nice to call .Validate() though..
-			if err := proto.Unmarshal(resource.Value, cl); err != nil {
-				runner.Error(fmt.Errorf("failed to unmarshal resource %d", i))
-				continue
-			}
-			if err := cl.Validate(); err != nil {
-				runner.Error(fmt.Errorf("failed to validate resource %d: %v", i, err))
-				continue
-			}
-		}
-		runner.Pass(fmt.Sprintf("Recieved %d valid clusters", len(resp.Resources)))
+		checkAdsForType(ctx, runner, input, resource.ClusterType)
 	},
 })
+
+var AdsListenersCheck = RegisterCheck(conformance.Check{
+	Name:        "ADS Listeners",
+	Description: "Can connect over ADS and get a listener valid response",
+	Labels:      []label.Instance{label.Server, label.XdsV3},
+	Timeout:     time.Second * 5,
+	Run: func(ctx context.Context, runner conformance.TestReporter, input conformance.TestInput) {
+		checkAdsForType(ctx, runner, input, resource.ListenerType)
+	},
+})
+
+// TODO pass resource names
+var AdsRoutesCheck = RegisterCheck(conformance.Check{
+	Name:        "ADS Routes",
+	Description: "Can connect over ADS and get a route valid response",
+	Labels:      []label.Instance{label.Server, label.XdsV3},
+	Timeout:     time.Second * 5,
+	Run: func(ctx context.Context, runner conformance.TestReporter, input conformance.TestInput) {
+		checkAdsForType(ctx, runner, input, resource.RouteType)
+	},
+})
+
+var AdsEndpointsCheck = RegisterCheck(conformance.Check{
+	Name:        "ADS Endpoints",
+	Description: "Can connect over ADS and get a endpoint valid response",
+	Labels:      []label.Instance{label.Server, label.XdsV3},
+	Timeout:     time.Second * 5,
+	Run: func(ctx context.Context, runner conformance.TestReporter, input conformance.TestInput) {
+		checkAdsForType(ctx, runner, input, resource.EndpointType)
+	},
+})
+
+var AdsSecretCheck = RegisterCheck(conformance.Check{
+	Name:        "ADS Secrets",
+	Description: "Can connect over ADS and get a secret valid response",
+	Labels:      []label.Instance{label.Server, label.XdsV3},
+	Timeout:     time.Second * 5,
+	Run: func(ctx context.Context, runner conformance.TestReporter, input conformance.TestInput) {
+		checkAdsForType(ctx, runner, input, resource.SecretType)
+	},
+})
+
+func checkAdsForType(ctx context.Context, runner conformance.TestReporter, input conformance.TestInput, typeUrl string) {
+	c, err := xds.ConnectAds(ctx, input.Address)
+	if err != nil {
+		runner.Error(connectionFailure(input.Address))
+		return
+	}
+	defer c.Cleanup()
+
+	if err := c.Send(&discovery.DiscoveryRequest{
+		Node:    constructNode(),
+		TypeUrl: typeUrl,
+	}); err != nil {
+		runner.Error(requestFailure(err))
+		return
+	}
+	resp, err := c.Recv()
+	if err != nil {
+		runner.Error(responseFailure(err))
+		return
+	}
+	if resp.TypeUrl != typeUrl {
+		runner.Error(fmt.Errorf("expected type URL %q, got %q", typeUrl, resp.TypeUrl))
+	} else {
+		runner.Pass(fmt.Sprintf("Response has the correct TypeUrl: %s", typeUrl))
+	}
+	if resp.Nonce == "" {
+		runner.Error(fmt.Errorf("expected a nonce in discovery response, found none"))
+	}
+	if resp.VersionInfo == "" {
+		runner.Error(fmt.Errorf("expected version info in discovery response, found none"))
+	}
+	runner.Pass(fmt.Sprintf("Recieved %d valid clusters", len(resp.Resources)))
+}
