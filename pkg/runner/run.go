@@ -45,7 +45,7 @@ func RunGoTest(t *testing.T, labels conformance.LabelSelectors, input conformanc
 }
 
 type PrintReporter struct {
-	w io.Writer
+	w      io.Writer
 	failed bool
 }
 
@@ -78,6 +78,7 @@ var _ conformance.TestReporter = &GoTestReporter{}
 func (g GoTestReporter) ReportRunning(check conformance.Check) {}
 
 func (g GoTestReporter) Error(err error) {
+	g.t.Helper()
 	g.t.Error(err)
 }
 
