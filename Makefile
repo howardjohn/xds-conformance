@@ -15,3 +15,4 @@ test:
 .PHONY: format
 format:
 	@goimports -local $(PKG) -w -l pkg
+	@go mod tidy

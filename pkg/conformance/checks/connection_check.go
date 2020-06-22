@@ -21,10 +21,7 @@ var ConnectionCheck = RegisterCheck(conformance.Check{
 		}
 		c, err := xds.ConnectAds(ctx, input.Address)
 		if err != nil {
-			return conformance.TestResult{
-				Error:       fmt.Errorf("failed to conntect to %q", input.Address),
-				Information: "Verify the XDS server is running and is reachable at the provided address. If TLS is required by the server, ensure TLS configuration is set.",
-			}
+			return connectionFailure(input.Address)
 		}
 		defer c.Cleanup()
 		return conformance.TestResult{
@@ -32,4 +29,3 @@ var ConnectionCheck = RegisterCheck(conformance.Check{
 		}
 	},
 })
-
