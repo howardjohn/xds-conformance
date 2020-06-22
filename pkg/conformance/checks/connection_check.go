@@ -13,7 +13,7 @@ import (
 var ConnectionCheck = RegisterCheck(conformance.Check{
 	Name:        "Server Connection",
 	Description: "Clients must be able to connect to the server under test.",
-	Labels:      []label.Instance{label.Server},
+	Labels:      []label.Instance{label.Server, label.XdsV3},
 	Timeout:     time.Second * 5,
 	Run: func(ctx context.Context, input conformance.TestInput) conformance.TestResult {
 		if input.Address == "" {
@@ -37,7 +37,7 @@ var ConnectionCheck = RegisterCheck(conformance.Check{
 var FailCheck = RegisterCheck(conformance.Check{
 	Name:        "Fail Check",
 	Description: "For testing only, should be removed before release",
-	Labels:      []label.Instance{label.Server},
+	Labels:      []label.Instance{},
 	Run: func(ctx context.Context, input conformance.TestInput) conformance.TestResult {
 		return conformance.TestResult{
 			Error: fmt.Errorf("this test always fails"),
@@ -49,7 +49,7 @@ var FailCheck = RegisterCheck(conformance.Check{
 var SkipCheck = RegisterCheck(conformance.Check{
 	Name:        "Skip Check",
 	Description: "For testing only, should be removed before release",
-	Labels:      []label.Instance{label.Server},
+	Labels:      []label.Instance{},
 	Run: func(ctx context.Context, input conformance.TestInput) conformance.TestResult {
 		return conformance.TestResult{Skipped: true, Information: "Skipped because this test is always skipped."}
 	},
