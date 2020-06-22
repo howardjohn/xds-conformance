@@ -33,24 +33,3 @@ var ConnectionCheck = RegisterCheck(conformance.Check{
 	},
 })
 
-// Always fails
-var FailCheck = RegisterCheck(conformance.Check{
-	Name:        "Fail Check",
-	Description: "For testing only, should be removed before release",
-	Labels:      []label.Instance{},
-	Run: func(ctx context.Context, input conformance.TestInput) conformance.TestResult {
-		return conformance.TestResult{
-			Error: fmt.Errorf("this test always fails"),
-		}
-	},
-})
-
-// Always skipped
-var SkipCheck = RegisterCheck(conformance.Check{
-	Name:        "Skip Check",
-	Description: "For testing only, should be removed before release",
-	Labels:      []label.Instance{},
-	Run: func(ctx context.Context, input conformance.TestInput) conformance.TestResult {
-		return conformance.TestResult{Skipped: true, Information: "Skipped because this test is always skipped."}
-	},
-})

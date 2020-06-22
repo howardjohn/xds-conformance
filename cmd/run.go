@@ -65,12 +65,12 @@ func displayResults(results []conformance.TestResult, stdout io.Writer) {
 		if result.Error != nil {
 
 			print("  %s %s failed in %v: %s%s", color.RedString("✘"), result.Name,
-				result.Duration.Truncate(time.Second / 10), result.Error, infoString(result.Information))
+				result.Duration.Truncate(time.Millisecond), result.Error, infoString(result.Information))
 			continue
 		}
 
 		print("  %s %s passed in %v%s", color.GreenString("✔"), result.Name,
-			result.Duration.Truncate(time.Second / 10), infoString(result.Information))
+			result.Duration.Truncate(time.Millisecond), infoString(result.Information))
 		continue
 	}
 }
