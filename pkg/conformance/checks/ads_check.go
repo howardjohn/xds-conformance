@@ -28,10 +28,11 @@ var AdsCheck = RegisterCheck(conformance.Check{
 	Description: "Can connect over ADS and get a valid response",
 	Labels:      []label.Instance{label.Server, label.XdsV3},
 	Timeout:     time.Second * 5,
-	Run: func(ctx context.Context, input conformance.TestInput) conformance.TestResult {
+	Run: func(ctx context.Context, runner conformance.TestReporter, input conformance.TestInput) {
 		c, err := xds.ConnectAds(ctx, input.Address)
 		if err != nil {
-			return connectionFailure(input.Address)
+			runner.Error(connectionFailure(input.Address))
+			return
 		}
 		defer c.Cleanup()
 
@@ -39,30 +40,31 @@ var AdsCheck = RegisterCheck(conformance.Check{
 			Node:    constructNode(),
 			TypeUrl: resource.ClusterType,
 		}); err != nil {
-			return requestFailure(err)
+			runner.Error(requestFailure(err))
+			return
 		}
 		resp, err := c.Recv()
 		if err != nil {
-			return responseFailure(err)
+			runner.Error(responseFailure(err))
+			return
 		}
-		var resultErr error
 		if resp.TypeUrl != resource.ClusterType {
-			resultErr = AddError(resultErr, fmt.Errorf("expected type URL %q, got %q", resource.ClusterType, resp.TypeUrl))
+			runner.Error(fmt.Errorf("expected type URL %q, got %q", resource.ClusterType, resp.TypeUrl))
+		} else {
+			runner.Pass(fmt.Sprintf("Response has the correct TypeUrl: %s", resource.ClusterType))
 		}
 		for i, resource := range resp.Resources {
 			cl := &cluster.Cluster{}
 			// TODO is this safe? With Any we may not know all types. It would be nice to call .Validate() though..
 			if err := proto.Unmarshal(resource.Value, cl); err != nil {
-				resultErr = AddError(resultErr, fmt.Errorf("failed to unmarshal resource %d", i))
+				runner.Error(fmt.Errorf("failed to unmarshal resource %d", i))
 				continue
 			}
 			if err := cl.Validate(); err != nil {
-				resultErr = AddError(resultErr, fmt.Errorf("failed to validate resource %d: %v", i, err))
+				runner.Error(fmt.Errorf("failed to validate resource %d: %v", i, err))
 				continue
 			}
 		}
-		return conformance.TestResult{
-			Information: fmt.Sprintf("Recieved %d clusters.", len(resp.Resources)),
-		}
+		runner.Pass(fmt.Sprintf("Recieved %d valid clusters", len(resp.Resources)))
 	},
 })

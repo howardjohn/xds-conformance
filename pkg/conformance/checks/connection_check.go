@@ -15,17 +15,17 @@ var ConnectionCheck = RegisterCheck(conformance.Check{
 	Description: "Clients must be able to connect to the server under test.",
 	Labels:      []label.Instance{label.Server, label.XdsV3},
 	Timeout:     time.Second * 5,
-	Run: func(ctx context.Context, input conformance.TestInput) conformance.TestResult {
+	Run: func(ctx context.Context, runner conformance.TestReporter, input conformance.TestInput) {
 		if input.Address == "" {
-			return conformance.TestResult{Error: fmt.Errorf("invalid address provided %q", input.Address)}
+			runner.Error(fmt.Errorf("invalid address provided %q", input.Address))
+			return
 		}
 		c, err := xds.ConnectAds(ctx, input.Address)
 		if err != nil {
-			return connectionFailure(input.Address)
+			runner.Error(connectionFailure(input.Address))
+			return
 		}
 		defer c.Cleanup()
-		return conformance.TestResult{
-			Information: fmt.Sprintf("Connection established to %q.", input.Address),
-		}
+		runner.Pass(fmt.Sprintf("Connection established to %q.", input.Address))
 	},
 })

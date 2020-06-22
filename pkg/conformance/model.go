@@ -23,6 +23,26 @@ type TestResult struct {
 	Duration time.Duration
 }
 
+type TestStatus interface {
+	isTestStatus()
+}
+
+func (_ Error) isTestStatus() {}
+func (_ Pass) isTestStatus()  {}
+func (_ Info) isTestStatus()  {}
+
+type Error struct {
+	Error error
+}
+
+type Pass struct {
+	Message string
+}
+
+type Info struct {
+	Message string
+}
+
 // LabelSelector defines a label selection for tests. This is used to filter out supported tests. For example,
 // a user developing an XDS server may filter to Match={"server"} to run only server tests.
 type LabelSelector struct {
@@ -38,6 +58,12 @@ func (l LabelSelectors) Matches(test []label.Instance) bool {
 	return true
 }
 
+type TestReporter interface {
+	Error(err error)
+	Pass(msg string)
+	Info(msg string)
+}
+
 type TestInput struct {
 	Address string
 }
@@ -48,5 +74,5 @@ type Check struct {
 	// Timeout for the test
 	Timeout time.Duration
 	Labels  []label.Instance
-	Run     func(ctx context.Context, input TestInput) TestResult
+	Run     func(ctx context.Context, runner TestReporter, input TestInput)
 }
