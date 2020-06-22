@@ -1,0 +1,9 @@
+/vendor
+/bin
+.idea*
+*.iml
+*.bak
+.vagrant
+
+# Eclipse artifacts
+/.project
